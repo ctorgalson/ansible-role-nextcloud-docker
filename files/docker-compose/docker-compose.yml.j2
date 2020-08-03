@@ -1,3 +1,4 @@
+---
 version: '3'
 
 services:
@@ -5,99 +6,53 @@ services:
     image: postgres:alpine
     restart: always
     volumes:
-{% for postgres_volume in nd_postgres_volumes %}
-      - {{ postgres_volume }}
-{% endfor %}
+      {{ nd_docker_compose.db.volumes | to_nice_yaml | indent(width=6) }}
     env_file:
       - db.env
 
-{% if nd_use_redis %}
-  redis:
-    image: redis:alpine
-    restart: always
-
-{% endif %}
   app:
     image: nextcloud:apache
     restart: always
     volumes:
-{% for nextcloud_volume in nd_nextcloud_volumes %}
-      - {{ nextcloud_volume }}
-{% endfor %}
+      {{ nd_docker_compose.app.volumes | to_nice_yaml | indent(width=6) }}
     environment:
-{% for variable in nd_nextcloud_env_vars %}
-      - {{ variable.name }}={{ variable.value }}
-{% endfor %}
+      {{ nd_docker_compose.app.environment | to_nice_yaml | indent(width=6) }}
     env_file:
       - db.env
     depends_on:
       - db
-{% if nd_use_redis %}
-      - redis
-{% endif %}
     networks:
-      - proxy-tier
-      - default
-
-{% if nd_use_cron %}
-  cron:
-    image: nextcloud:apache
-    restart: always
-    volumes:
-{% for cron_volume in nd_nextcloud_required_volumes %}
-      - {{ cron_volume }}
-{% endfor %}
-    entrypoint: /cron.sh
-    depends_on:
-      - db
-{% if nd_use_redis %}
-      - redis
-{% endif %}
-{% endif %}
+      {{ nd_docker_compose.app.networks | to_nice_yaml | indent(width=6) }}
 
   proxy:
     build: ./proxy
     restart: always
     ports:
       - 80:80
-{% if nd_use_letsencrypt %}
       - 443:443
-{% endif %}
-{% if nd_use_letsencrypt %}
     labels:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-{% endif %}
     volumes:
-{% for nginx_proxy_volume in nd_nginx_proxy_volumes %}
-{% if nginx_proxy_volume|regex_search('certs$') %}
-      - {{ nginx_proxy_volume }}:ro
-{% else %}
-      - {{ nginx_proxy_volume }}
-{% endif %}
-{% endfor %}
+      {{ nd_docker_compose.proxy.volumes | to_nice_yaml | indent(width=6) }}
     networks:
-      - proxy-tier
+      {{ nd_docker_compose.proxy.networks | to_nice_yaml | indent(width=6) }}
 
-{% if nd_use_letsencrypt %}
-  letsencrypt:
+  letsencrypt-companion:
     image: jrcs/letsencrypt-nginx-proxy-companion
     restart: always
     volumes:
-{% for letsencrypt_volume in nd_letsencrypt_volumes %}
-      - {{ letsencrypt_volume }}
-{% endfor %}
+      {{ nd_docker_compose['letsencrypt-companion'].volumes | to_nice_yaml | indent(width=6) }}
     networks:
-      - proxy-tier
+      {{ nd_docker_compose['letsencrypt-companion'].networks | to_nice_yaml | indent(width=6) }}
     depends_on:
       - proxy
 
-{% endif %}
 volumes:
-{% for volume in (nd_nextcloud_volumes + nd_nginx_proxy_volumes + nd_postgres_volumes)|unique %}
-{% if volume|regex_search('^[a-z.]+:') %}
-  {{ volume|regex_replace('^([a-z.]+:).*$', '\\1') }}
-{% endif %}
-{% endfor %}
+  {{ nd_docker_volumes.db }}:
+  {{ nd_docker_volumes.app}}:
+  {{ nd_docker_volumes['letsencrypt-companion']}}:
+  {{ nd_docker_volumes.proxy.conf }}:
+  {{ nd_docker_volumes.proxy.docroot }}:
 
 networks:
-  proxy-tier:
+  {{ nd_docker_network }}:
