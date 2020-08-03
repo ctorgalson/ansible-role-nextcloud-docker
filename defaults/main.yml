@@ -103,6 +103,11 @@ nd_docker_compose:
     volumes:
       - "{{ nd_docker_volumes.app }}:/var/www/html"
   db:
+    environment:
+      - "POSTGRES_DB={{ nd_postgres_database }}"
+      - "POSTGRES_HOST={{ nd_postgres_host }}"
+      - "POSTGRES_PASSWORD={{ nd_postgres_password }}"
+      - "POSTGRES_USER={{ nd_postgres_user }}"
     volumes:
       - "{{ nd_docker_volumes.db }}:/var/lib/postgresql/data"
   proxy:
