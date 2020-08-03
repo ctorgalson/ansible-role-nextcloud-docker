@@ -20,7 +20,7 @@
         nd_nextcloud_status: "{{ nd_nextcloud_raw_status.stdout | from_json }}"
 
     - name: Complete Nextcloud installation from cli.
-      shell: "{{ nd_nextcloud_occ_prefix }} {{ nd_nextcloud_occ_install }}"
+      shell: "{{ nd_nextcloud_occ_prefix }} php occ {{ nd_nextcloud_occ_install_command }}"
       become: true
       when: "not nd_nextcloud_status.installed"
       no_log: true
