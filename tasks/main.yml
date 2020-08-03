@@ -24,7 +24,7 @@
 
 - name: Install Nextcloud application.
   include_tasks:
-    file: "nd-install-nextcloud.yml"
+    file: "{{ nd_nextcloud_install_tasks_file }}"
     apply:
       tags:
         - install-nextcloud
@@ -32,23 +32,13 @@
   tags:
     - always
 
-- name: Configure Nextcloud application before first run.
+- name: Run Nextcloud post-configuration commands as needed.
   include_tasks:
-    file: "nd-configure-nextcloud.yml"
+    file: "{{ nd_nextcloud_post_install_tasks_file }}"
     apply:
       tags:
         - configure-nextcloud
         - nextcloud
+        - post-install
   tags:
     - always
-
-- name: Pause, then run further commands.
-  block:
-    - name: Run post-install custom configuration commands.
-      include_tasks:
-        file: "{{ nd_configure_nextcloud_custom_file }}"
-        apply:
-          tags:
-            - configure-nextcloud
-            - custom-tasks
-            - nextcloud
