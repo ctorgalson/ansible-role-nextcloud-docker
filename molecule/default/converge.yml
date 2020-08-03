@@ -4,7 +4,6 @@
   become: true
   become_user: root
   vars:
-    nd_use_letsencrypt: false
     nd_docker_compose_remove_project: false
     nd_domain_name: "instance"
     nd_postgres_password: "postgres-password"
@@ -12,9 +11,32 @@
     nd_nextcloud_admin_password: "nextcloud-admin-password"
     nd_nextcloud_required_volumes:
       - "nextcloud:/var/www/html"
-      - "/var/nextcloud/config:/var/www/html/config"
-      - "/var/nextcloud/custom_apps:/var/www/html/custom_apps"
-      - "/var/nextcloud/data:/var/www/html/data"
-      - "/var/nextcloud/themes:/var/www/html/themes"
+    nd_docker_compose:
+      app:
+        environment:
+          - "VIRTUAL_HOST={{ nd_domain_name }}"
+          - "LETSENCRYPT_HOST={{ nd_domain_name }}"
+          - "LETSENCRYPT_EMAIL=admin@example.local"
+          - "POSTGRES_HOST={{ nd_postgres_host }}"
+        networks:
+          - "default"
+          - "{{ nd_docker_network }}"
+        volumes:
+          - "{{ nd_docker_volumes.app }}:/var/www/html"
+      db:
+        environment:
+          - "POSTGRES_DB={{ nd_postgres_database }}"
+          - "POSTGRES_HOST={{ nd_postgres_host }}"
+          - "POSTGRES_PASSWORD={{ nd_postgres_password }}"
+          - "POSTGRES_USER={{ nd_postgres_user }}"
+        volumes:
+          - "{{ nd_docker_volumes.db }}:/var/lib/postgresql/data"
+      proxy:
+        networks:
+          - "{{ nd_docker_network }}"
+        volumes:
+          - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
+          - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
+          - "/var/run/docker.sock:/tmp/docker.sock:ro"
   roles:
     - role: ansible-role-nextcloud-docker
