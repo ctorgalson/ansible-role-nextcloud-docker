@@ -1,133 +1,136 @@
 ---
 # defaults file for ansible-role-nextcloud-docker
 
-# To-do:
 #
-# - Non-docker volume for nextcloud app.
-# - Optional letsencrypt (ignore letsencrypt tasks if VIRTUAL_HOST
-#   contains "local").
-
-# Nextcloud config.
+# docker-compose variables.
 #
-# nextcloud_config vars.
-nextcloud_config_allow_insecure_defaults: false
-nextcloud_config_domain: "example.local"
-nextcloud_config_db_root_password: "root"
-nextcloud_config_db_database: "mysql"
-nextcloud_config_db_database_name: "nextcloud"
-nextcloud_config_db_database_user: "nextcloud"
-nextcloud_config_db_database_password: "mysql"
-nextcloud_config_trusted_domains:
-  - "localhost"
-  - "{{ nextcloud_config_domain }}"
-nextcloud_config_admin_user: "admin"
-nextcloud_config_admin_password: "pass"
-nextcloud_encryption_module: "encryption"
+nd_docker_compose_project: "nextcloud"
+nd_docker_compose_project_dir: "/tmp/{{ nd_docker_compose_project }}"
+nd_docker_compose_project_src: "files/docker-compose"
+nd_docker_compose_remove_project: true
 
-# Nextcloud containers.
 #
-# nextcloud_app_container vars.
-nextcloud_app_container_env:
-  - key: "VIRTUAL_HOST"
-    value: "{{ nextcloud_config_domain }}"
-  - key: "LETSENCRYPT_HOST"
-    value: "{{ nextcloud_config_domain }}"
-  - key: "LETSENCRYPT_EMAIL"
-    value: "{{ nextcloud_letsencrypt_container_email }}"
-nextcloud_app_container_image: "nextcloud:latest"
-nextcloud_app_container_name: "nextcloud-app"
-nextcloud_app_container_ports:
-  - "80"
-nextcloud_app_container_restart: true
-nextcloud_app_container_state: started
-nextcloud_app_container_volumes:
-  - "nextcloud:/var/www/html"
-  - "./app/config:/var/www/html/config"
-  - "./app/custom_apps:/var/www/html/custom_apps"
-  - "./app/data:/var/www/html/data"
-  - "./app/themes:/var/www/html/themes"
-  - "/etc/localtime:/etc/localtime:ro"
+# Role configuration options.
+#
+nd_allow_insecure_defaults: false
+nd_use_letsencrypt: true
+nd_use_redis: true
+nd_use_cron: true
+nd_domain_name: "example.local"
+nd_nextcloud_install_tasks_file: "nd-nextcloud-install.yml"
+nd_nextcloud_post_install_tasks_file: "nd-nextcloud-post-install.yml"
 
-# nextcloud_mariadb_container vars.
-nextcloud_mariadb_container_image: "mariadb"
-nextcloud_mariadb_container_name: "nextcloud-mariadb"
-nextcloud_mariadb_container_restart: true
-nextcloud_mariadb_container_state: started
-nextcloud_mariadb_container_volumes:
-  - "db:/var/lib/mysql"
-  - "/etc/localtime:/etc/localtime:ro"
-nextcloud_mariadb_container_env:
-  - key: "MYSQL_ROOT_PASSWORD"
-    value: "{{ nextcloud_config_db_root_password }}"
-  - key: "MYSQL_PASSWORD"
-    value: "{{ nextcloud_config_db_database_password }}"
-  - key: "MYSQL_DATABASE"
-    value: "{{ nextcloud_config_db_database_name }}"
-  - key: "MYSQL_USER"
-    value: "{{ nextcloud_config_db_database_user }}"
-  - key: "MYSQL_HOST"
-    value: "{{ nextcloud_mariadb_container_name }}"
+#
+# Service passwords.
+#
+nd_postgres_password: "insecure"
+nd_redis_host_password: "insecure"
+nd_nextcloud_admin_password: "insecure"
 
-# nextcloud_nginx_container vars.
-nextcloud_nginx_container_image: "jwilder/nginx-proxy:alpine"
-nextcloud_nginx_container_name: "nextcloud-nginx"
-nextcloud_nginx_container_ports:
-  - "80:80"
-  - "443:443"
-nextcloud_nginx_container_restart: true
-nextcloud_nginx_container_state: started
-nextcloud_nginx_container_volumes:
-  - "./proxy/conf.d:/etc/nginx/conf.d:rw"
-  - "./proxy/vhost.d:/etc/nginx/vhost.d:rw"
-  - "./proxy/html:/usr/share/nginx/html:rw"
-  - "./proxy/certs:/etc/nginx/certs:ro"
-  - "/etc/localtime:/etc/localtime:ro"
-  - "/var/run/docker.sock:/tmp/docker.sock:ro"
+#
+# Service environment vars and volumes.
+#
 
-# nextcloud_letsencrypt_container vars.
-nextcloud_letsencrypt_container_email: "admin@example.com"
-nextcloud_letsencrypt_enable: true
-nextcloud_letsencrypt_container_name: "nextcloud-letsencrypt"
-nextcloud_letsencrypt_container_image: "jrcs/letsencrypt-nginx-proxy-companion"
-nextcloud_letsencrypt_container_restart: true
-nextcloud_letsencrypt_container_restart_policy: unless-stopped
-nextcloud_letsencrypt_container_state: started
-nextcloud_letsencrypt_container_volumes:
-  - "./proxy/certs:/etc/nginx/certs:rw"
-  - "./proxy/vhost.d:/etc/nginx/vhost.d:rw"
-  - "./proxy/html:/usr/share/nginx/html:rw"
-  - "/etc/localtime:/etc/localtime:ro"
+#
+# Letsencrypt
+#
+# Env vars.
+nd_letsencrypt_env_vars:
+  - name: "LETSENCRYPT_HOST"
+    value: "{{ nd_domain_name }}"
+  - name: "LETSENCRYPT_EMAIL"
+    value: "admin@example.local"
+nd_nextcloud_required_apps: []
+
+# Volumes.
+nd_letsencrypt_required_volumes:
+  - "certs:/etc/nginx/certs"
   - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
-# Nextcloud network.
 #
-# nextcloud_network vars.
-nextcloud_network_name: "nextcloud_network"
+# PostgreSQL
+#
+nd_postgres_database: "nextcloud"
+nd_postgres_host: "db"
+nd_postgres_user: "nextcloud"
 
-# Nextcloud volumes.
-#
-# Nextcloud volume vars.
-nextcloud_volumes:
-  - "nextcloud"
-  - "mariadb"
+# Env vars.
+nd_postgres_env_vars:
+  - name: "POSTGRES_DB"
+    value: "{{ nd_postgres_database }}"
+  - name: "POSTGRES_HOST"
+    value: "{{ nd_postgres_host }}"
+  - name: "POSTGRES_PASSWORD"
+    value: "{{ nd_postgres_password }}"
+  - name: "POSTGRES_USER"
+    value: "{{ nd_postgres_user }}"
 
-# Nextcloud cli.
-#
-# Nextcloud cli vars.
-nextcloud_occ_prefix: "docker exec --user www-data {{ nextcloud_app_container_name }}"
-nextcloud_occ_install: >
-  php occ maintenance:install
-  --database="{{ nextcloud_config_db_database }}"
-  --database-name="{{ nextcloud_config_db_database_name }}"
-  --database-user="{{ nextcloud_config_db_database_user }}"
-  --database-pass="{{ nextcloud_config_db_database_password }}"
-  --database-host="{{ nextcloud_mariadb_container_name }}"
-  --admin-user="{{ nextcloud_config_admin_user }}"
-  --admin-pass="{{ nextcloud_config_admin_password }}"
+# Volumes.
+nd_postgres_required_volumes:
+  - "db:/var/lib/postgresql/data"
 
-# Nextcloud cron.
 #
-# Nextcloud cron vars (note these will be prefixed with nextcloud_occ_prefix).
-nextcloud_cron_tasks_include: "nextcloud-cron.yml"
-nextcloud_cron_tasks:
-  - "php -f /var/www/html/cron.php"
+# Nextcloud
+#
+# Env vars.
+nd_nextcloud_env_vars:
+  - name: "VIRTUAL_HOST"
+    value: "{{ nd_domain_name }}"
+  - name: "POSTGRES_HOST"
+    value: "db"
+
+# Volumes.
+nd_nextcloud_required_volumes:
+  - "nextcloud:/var/www/html"
+  # - "/var/nextcloud/config:/var/www/html/config"
+  # - "/var/nextcloud/custom_apps:/var/www/html/custom_apps"
+  # - "/var/nextcloud/data:/var/www/html/data"
+  # - "/var/nextcloud/themes:/var/www/html/themes"
+
+#
+# Nginx Proxy
+#
+# Volumes.
+nd_nginx_proxy_required_volumes:
+  - "vhost.d:/etc/nginx/vhost.d"
+  - "html:/usr/share/nginx/html"
+  - "/var/run/docker.sock:/tmp/docker.sock:ro"
+  # - "/var/nextcloud/proxy/conf.d:/etc/nginx/conf.d"
+
+#
+# Redis
+#
+# Env vars.
+nd_redis_env_vars:
+  - name: "REDIS_HOST"
+    value: "redis"
+  - name: "REDIS_HOST_PORT"
+    value: "6379"
+  - name: "REDIS_HOST_PASSWORD"
+    value: "{{ nd_redis_host_password }}"
+
+#
+# Nextcloud install, setup related vars.
+#
+nd_nextcloud_admin_user: "admin"
+
+nd_nextcloud_occ_prefix: >-
+  docker exec --user www-data {{ nd_docker_compose_project }}_app_1
+
+nd_nextcloud_occ_install_command: >
+  maintenance:install
+  --database="pgsql"
+  --database-host="{{ nd_postgres_host }}"
+  --database-name="{{ nd_postgres_database }}"
+  --database-user="{{ nd_postgres_user }}"
+  --database-pass="{{ nd_postgres_password }}"
+  --admin-user="{{ nd_nextcloud_admin_user }}"
+  --admin-pass="{{ nd_nextcloud_admin_password }}"
+
+nd_nextcloud_encryption_module: "encryption"
+
+nd_nextcloud_occ_commands:
+  - command: "config:system:set trusted_domains 0 --value=localhost"
+  - command: "config:system:set trusted_domains 1 --value={{ nd_domain_name }}"
+  - command: "encryption:enable"
+  - command: "app:enable {{ nd_nextcloud_encryption_module }}"

@@ -1,0 +1,103 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:alpine
+    restart: always
+    volumes:
+{% for postgres_volume in nd_postgres_volumes %}
+      - {{ postgres_volume }}
+{% endfor %}
+    env_file:
+      - db.env
+
+{% if nd_use_redis %}
+  redis:
+    image: redis:alpine
+    restart: always
+
+{% endif %}
+  app:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+{% for nextcloud_volume in nd_nextcloud_volumes %}
+      - {{ nextcloud_volume }}
+{% endfor %}
+    environment:
+{% for variable in nd_nextcloud_env_vars %}
+      - {{ variable.name }}={{ variable.value }}
+{% endfor %}
+    env_file:
+      - db.env
+    depends_on:
+      - db
+{% if nd_use_redis %}
+      - redis
+{% endif %}
+    networks:
+      - proxy-tier
+      - default
+
+{% if nd_use_cron %}
+  cron:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+{% for cron_volume in nd_nextcloud_required_volumes %}
+      - {{ cron_volume }}
+{% endfor %}
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+{% if nd_use_redis %}
+      - redis
+{% endif %}
+{% endif %}
+
+  proxy:
+    build: ./proxy
+    restart: always
+    ports:
+      - 80:80
+{% if nd_use_letsencrypt %}
+      - 443:443
+{% endif %}
+{% if nd_use_letsencrypt %}
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+{% endif %}
+    volumes:
+{% for nginx_proxy_volume in nd_nginx_proxy_volumes %}
+{% if nginx_proxy_volume|regex_search('certs$') %}
+      - {{ nginx_proxy_volume }}:ro
+{% else %}
+      - {{ nginx_proxy_volume }}
+{% endif %}
+{% endfor %}
+    networks:
+      - proxy-tier
+
+{% if nd_use_letsencrypt %}
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart: always
+    volumes:
+{% for letsencrypt_volume in nd_letsencrypt_volumes %}
+      - {{ letsencrypt_volume }}
+{% endfor %}
+    networks:
+      - proxy-tier
+    depends_on:
+      - proxy
+
+{% endif %}
+volumes:
+{% for volume in (nd_nextcloud_volumes + nd_nginx_proxy_volumes + nd_postgres_volumes)|unique %}
+{% if volume|regex_search('^[a-z.]+:') %}
+  {{ volume|regex_replace('^([a-z.]+:).*$', '\\1') }}
+{% endif %}
+{% endfor %}
+
+networks:
+  proxy-tier:

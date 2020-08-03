@@ -4,90 +4,41 @@
 - name: Abort if using insecure values.
   assert:
     that: >
-      (nextcloud_config_db_root_password != 'root'
-      and nextcloud_config_db_database_password != 'mysql'
-      and nextcloud_config_admin_password != 'pass')
-      or nextcloud_config_allow_insecure_defaults
-    fail_msg: "Please change insecure default vars or set 'nextcloud_config_allow_insecure_defaults: true'"
-  when: "nextcloud_config_domain != 'example.local'"
+      (nd_postgres_password != 'insecure'
+      and nd_redis_host_password != 'insecure'
+      and nd_nextcloud_admin_password != 'insecure')
+      or nd_allow_insecure_defaults
+    fail_msg: "Please change insecure default vars or set 'nd_allow_insecure_defaults: true'"
+  when: "nd_domain_name != 'example.local'"
 
-- name: Set up docker volumes for Nextcloud.
+- name: Prepare docker-compose files, and use them to build the app.
   include_tasks:
-    file: "nextcloud-volumes.yml"
+    file: "nd-docker-compose.yml"
     apply:
       tags:
-        - storage
+        - docker
+        - docker-compose
         - volumes
   tags:
     - always
 
-- name: Set up network for Nextcloud containers.
+- name: Install Nextcloud application.
   include_tasks:
-    file: "nextcloud-network.yml"
+    file: "{{ nd_nextcloud_install_tasks_file }}"
     apply:
       tags:
-        - network
-  tags:
-    - always
-
-- name: Set up Nextcloud nginx proxy container.
-  include_tasks:
-    file: "nextcloud-nginx.yml"
-    apply:
-      tags:
-        - nginx
-        - proxy
-  tags:
-    - always
-
-- name: Set up Letsencrypt container.
-  include_tasks:
-    file: "nextcloud-letsencrypt.yml"
-    apply:
-      tags:
-        - letsencrypt
-        - ssl
-        - tls
-  when: nextcloud_letsencrypt_enable
-  tags:
-    - always
-
-- name: Set up Nextcloud mariadb container.
-  include_tasks:
-    file: "nextcloud-mariadb.yml"
-    apply:
-      tags:
-        - database
-        - mariadb
-  tags:
-    - always
-
-- name: Set up Nextcloud application container.
-  include_tasks:
-    file: "nextcloud-app.yml"
-    apply:
-      tags:
-        - app
-        - application
-  tags:
-    - always
-
-- name: Complete Nextcloud install from cli.
-  include_tasks:
-    file: "nextcloud-install.yml"
-    apply:
-      tags:
-        - install
+        - install-nextcloud
         - nextcloud
   tags:
     - always
 
-- name: Add cron tasks for Nextcloud app.
+- name: Run Nextcloud post-configuration commands as needed.
   include_tasks:
-    file: "{{ nextcloud_cron_tasks_include }}"
+    file: "{{ nd_nextcloud_post_install_tasks_file }}"
     apply:
       tags:
-        - cron
+        - configure-nextcloud
         - nextcloud
+        - post-install
   tags:
     - always
