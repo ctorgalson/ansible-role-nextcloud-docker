@@ -1,0 +1,50 @@
+---
+# Used in molecule testing, so does not include any letsencrypt-companion
+# container vars or settings.
+
+version: '3'
+
+services:
+  db:
+    image: postgres:alpine
+    restart: always
+    volumes:
+      {{ nd_docker_compose.db.volumes | to_nice_yaml | indent(width=6) }}
+    env_file:
+      - db.env
+
+  app:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+      {{ nd_docker_compose.app.volumes | to_nice_yaml | indent(width=6) }}
+    environment:
+      {{ nd_docker_compose.app.environment | to_nice_yaml | indent(width=6) }}
+    env_file:
+      - db.env
+    depends_on:
+      - db
+    networks:
+      {{ nd_docker_compose.app.networks | to_nice_yaml | indent(width=6) }}
+
+  proxy:
+    build: ./proxy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      {{ nd_docker_compose.proxy.volumes | to_nice_yaml | indent(width=6) }}
+    networks:
+      {{ nd_docker_compose.proxy.networks | to_nice_yaml | indent(width=6) }}
+
+volumes:
+  {{ nd_docker_volumes.db }}:
+  {{ nd_docker_volumes.app}}:
+  {{ nd_docker_volumes.proxy.conf }}:
+  {{ nd_docker_volumes.proxy.docroot }}:
+
+networks:
+  {{ nd_docker_network }}:
