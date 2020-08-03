@@ -14,8 +14,8 @@ nd_docker_compose_remove_project: true
 #
 nd_allow_insecure_defaults: false
 nd_use_letsencrypt: true
-nd_use_redis: true
-nd_use_cron: true
+# nd_use_redis: true
+# nd_use_cron: true
 nd_domain_name: "example.local"
 nd_nextcloud_install_tasks_file: "nd-nextcloud-install.yml"
 nd_nextcloud_post_install_tasks_file: "nd-nextcloud-post-install.yml"
@@ -31,21 +31,7 @@ nd_nextcloud_admin_password: "insecure"
 # Service environment vars and volumes.
 #
 
-#
-# Letsencrypt
-#
-# Env vars.
-nd_letsencrypt_env_vars:
-  - name: "LETSENCRYPT_HOST"
-    value: "{{ nd_domain_name }}"
-  - name: "LETSENCRYPT_EMAIL"
-    value: "admin@example.local"
 nd_nextcloud_required_apps: []
-
-# Volumes.
-nd_letsencrypt_required_volumes:
-  - "certs:/etc/nginx/certs"
-  - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
 #
 # PostgreSQL
@@ -53,49 +39,6 @@ nd_letsencrypt_required_volumes:
 nd_postgres_database: "nextcloud"
 nd_postgres_host: "db"
 nd_postgres_user: "nextcloud"
-
-# Env vars.
-nd_postgres_env_vars:
-  - name: "POSTGRES_DB"
-    value: "{{ nd_postgres_database }}"
-  - name: "POSTGRES_HOST"
-    value: "{{ nd_postgres_host }}"
-  - name: "POSTGRES_PASSWORD"
-    value: "{{ nd_postgres_password }}"
-  - name: "POSTGRES_USER"
-    value: "{{ nd_postgres_user }}"
-
-# Volumes.
-nd_postgres_required_volumes:
-  - "db:/var/lib/postgresql/data"
-
-#
-# Nextcloud
-#
-# Env vars.
-nd_nextcloud_env_vars:
-  - name: "VIRTUAL_HOST"
-    value: "{{ nd_domain_name }}"
-  - name: "POSTGRES_HOST"
-    value: "db"
-
-# Volumes.
-nd_nextcloud_required_volumes:
-  - "nextcloud:/var/www/html"
-  # - "/var/nextcloud/config:/var/www/html/config"
-  # - "/var/nextcloud/custom_apps:/var/www/html/custom_apps"
-  # - "/var/nextcloud/data:/var/www/html/data"
-  # - "/var/nextcloud/themes:/var/www/html/themes"
-
-#
-# Nginx Proxy
-#
-# Volumes.
-nd_nginx_proxy_required_volumes:
-  - "vhost.d:/etc/nginx/vhost.d"
-  - "html:/usr/share/nginx/html"
-  - "/var/run/docker.sock:/tmp/docker.sock:ro"
-  # - "/var/nextcloud/proxy/conf.d:/etc/nginx/conf.d"
 
 #
 # Redis
@@ -108,6 +51,8 @@ nd_redis_env_vars:
     value: "6379"
   - name: "REDIS_HOST_PASSWORD"
     value: "{{ nd_redis_host_password }}"
+
+#
 
 #
 # Nextcloud install, setup related vars.
@@ -134,3 +79,45 @@ nd_nextcloud_occ_commands:
   - command: "config:system:set trusted_domains 1 --value={{ nd_domain_name }}"
   - command: "encryption:enable"
   - command: "app:enable {{ nd_nextcloud_encryption_module }}"
+
+nd_docker_network: "proxy-tier"
+
+nd_docker_volumes:
+  db: "db"
+  app: "nextcloud"
+  letsencrypt-companion: "certs"
+  proxy:
+    conf: "vhost.d"
+    docroot: "html"
+
+nd_docker_compose:
+  app:
+    environment:
+      - "VIRTUAL_HOST={{ nd_domain_name }}"
+      - "LETSENCRYPT_HOST={{ nd_domain_name }}"
+      - "LETSENCRYPT_EMAIL=admin@example.local"
+      - "POSTGRES_HOST={{ nd_postgres_host }}"
+    networks:
+      - "default"
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes.app }}:/var/www/html"
+  db:
+    volumes:
+      - "{{ nd_docker_volumes.db }}:/var/lib/postgresql/data"
+  proxy:
+    networks:
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes['letsencrypt-companion'] }}:/etc/nginx/certs:ro"
+      - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
+      - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+  letsencrypt-companion:
+    networks:
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes['letsencrypt-companion'] }}:/etc/nginx/certs"
+      - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
+      - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
