@@ -13,7 +13,7 @@
     dest: "{{ nd_docker_compose_project_dir }}/db.env"
   changed_when: false
   # The env file may contain one or more passwords.
-  no_log: true
+  no_log: "{{ nd_secure_no_log }}"
 
 - name: Transfer dockerfile to remote.
   template:
@@ -21,7 +21,7 @@
     dest: "{{ nd_docker_compose_project_dir }}/docker-compose.yml"
   changed_when: false
   # The dockerfile may contain one or more passwords.
-  no_log: true
+  no_log: "{{ nd_secure_no_log }}"
 
 - name: Copy Nextcloud dockerfile dependencies to remote.
   copy:

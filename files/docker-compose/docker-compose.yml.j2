@@ -8,7 +8,13 @@ services:
     volumes:
       {{ nd_docker_compose.db.volumes | to_nice_yaml | indent(width=6) }}
     env_file:
-      - db.env
+      - db.en
+
+  redis:
+    image: redis:alpine
+    restart: always
+    environment:
+      {{ nd_docker_compose.redis.environment | to_nice_yaml | indent(width=6) }}
 
   app:
     image: nextcloud:apache
@@ -21,8 +27,19 @@ services:
       - db.env
     depends_on:
       - db
+      - redis
     networks:
       {{ nd_docker_compose.app.networks | to_nice_yaml | indent(width=6) }}
+
+  cron:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+      {{ nd_docker_compose.app.volumes | to_nice_yaml | indent(width=6) }}
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
 
   proxy:
     build: ./proxy

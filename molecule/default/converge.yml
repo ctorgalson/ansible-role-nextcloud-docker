@@ -4,6 +4,7 @@
   become: true
   become_user: root
   vars:
+    nd_secure_no_log: false
     nd_docker_compose_project_src: "{{ playbook_dir }}/../files/docker-compose"
     nd_docker_compose_remove_project: false
     nd_domain_name: "instance"
@@ -17,6 +18,7 @@
           - "LETSENCRYPT_HOST={{ nd_domain_name }}"
           - "LETSENCRYPT_EMAIL=admin@example.local"
           - "POSTGRES_HOST={{ nd_postgres_host }}"
+          - "REDIS_HOST={{ nd_redis_host }}"
         networks:
           - "default"
           - "{{ nd_docker_network }}"
@@ -37,5 +39,10 @@
           - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
           - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
           - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      redis:
+        environment:
+          - "REDIS_HOST={{ nd_redis_host }}"
+          - "REDIS_HOST_PORT={{ nd_redis_port }}"
+          - "REDIS_HOST_PASSWORD={{ nd_redis_host_password }}"
   roles:
     - role: ansible-role-nextcloud-docker

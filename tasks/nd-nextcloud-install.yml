@@ -1,12 +1,12 @@
 ---
 # tasks related to Nextcloud installation for ansible-role-nextcloud-docker.
 
-- name: Don't proceed if expected Nextcloud files are not present.
-  wait_for:
-    delay: "5"
-    path: "/var/lib/docker/volumes/nextcloud_nextcloud/_data/lib/versioncheck.php"
-    search_regex: "<\\?php"
-    timeout: "60"
+# - name: Don't proceed if expected Nextcloud files are not present.
+#   wait_for:
+#     delay: "5"
+#     path: "/var/lib/docker/volumes/nextcloud_html/_data/lib/versioncheck.php"
+#     search_regex: "<\\?php"
+#     timeout: "60"
 
 - name: Check if Nextcloud is installed and install it if not.
   block:
@@ -23,4 +23,4 @@
       shell: "{{ nd_nextcloud_occ_prefix }} php occ {{ nd_nextcloud_occ_install_command }}"
       become: true
       when: "not nd_nextcloud_status.installed"
-      no_log: true
+      no_log: "{{ nd_secure_no_log }}"

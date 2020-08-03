@@ -12,6 +12,7 @@ nd_docker_compose_remove_project: true
 #
 # Role configuration options.
 #
+nd_secure_no_log: true
 nd_allow_insecure_defaults: false
 nd_use_letsencrypt: true
 # nd_use_redis: true
@@ -43,16 +44,8 @@ nd_postgres_user: "nextcloud"
 #
 # Redis
 #
-# Env vars.
-nd_redis_env_vars:
-  - name: "REDIS_HOST"
-    value: "redis"
-  - name: "REDIS_HOST_PORT"
-    value: "6379"
-  - name: "REDIS_HOST_PASSWORD"
-    value: "{{ nd_redis_host_password }}"
-
-#
+nd_redis_host: "redis"
+nd_redis_port: "6379"
 
 #
 # Nextcloud install, setup related vars.
@@ -97,6 +90,7 @@ nd_docker_compose:
       - "LETSENCRYPT_HOST={{ nd_domain_name }}"
       - "LETSENCRYPT_EMAIL=admin@example.local"
       - "POSTGRES_HOST={{ nd_postgres_host }}"
+      - "REDIS_HOST={{ nd_redis_host }}"
     networks:
       - "default"
       - "{{ nd_docker_network }}"
@@ -126,3 +120,8 @@ nd_docker_compose:
       - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
       - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  redis:
+    environment:
+      - "REDIS_HOST={{ nd_redis_host }}"
+      - "REDIS_HOST_PORT={{ nd_redis_port }}"
+      - "REDIS_HOST_PASSWORD={{ nd_redis_host_password }}"

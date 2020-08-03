@@ -28,7 +28,8 @@ def test_nextcloud_trusted_domains(host, trusted_domain):
   '\'dbtype\' => \'pgsql\','
 ])
 def test_nextcloud_configuration(host, config_line):
-    c = 'cat /var/nextcloud/config/config.php'
+    c = ('cat '
+         '/var/lib/docker/volumes/nextcloud_nextcloud/_data/config/config.php')
     r = host.run(c)
 
     assert config_line in r.stdout
