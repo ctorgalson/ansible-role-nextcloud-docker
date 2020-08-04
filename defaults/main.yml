@@ -12,11 +12,13 @@ nd_docker_compose_remove_project: true
 #
 # Role configuration options.
 #
+# Set `no_log` property on tasks that may expose sensitive variables. Should
+# always be true, but may be useful for debugging.
 nd_secure_no_log: true
+# Permit default passwords. Should always be false, but can be disabled for
+# testing.
 nd_allow_insecure_defaults: false
-nd_use_letsencrypt: true
-# nd_use_redis: true
-# nd_use_cron: true
+
 nd_domain_name: "example.local"
 nd_nextcloud_install_tasks_file: "nd-nextcloud-install.yml"
 nd_nextcloud_post_install_tasks_file: "nd-nextcloud-post-install.yml"
@@ -27,12 +29,6 @@ nd_nextcloud_post_install_tasks_file: "nd-nextcloud-post-install.yml"
 nd_postgres_password: "insecure"
 nd_redis_host_password: "insecure"
 nd_nextcloud_admin_password: "insecure"
-
-#
-# Service environment vars and volumes.
-#
-
-nd_nextcloud_required_apps: []
 
 #
 # PostgreSQL
@@ -73,8 +69,10 @@ nd_nextcloud_occ_commands:
   - command: "encryption:enable"
   - command: "app:enable {{ nd_nextcloud_encryption_module }}"
 
+
 nd_docker_network: "proxy-tier"
 
+# These are all the volumes used in the `volumes` section of docker-compose.yml.
 nd_docker_volumes:
   db: "db"
   app: "nextcloud"
@@ -83,6 +81,21 @@ nd_docker_volumes:
     conf: "vhost.d"
     docroot: "html"
 
+# These variables used to populate values in docker-compose.yml. To keep things
+# simple and flexible, we're only populating environment variables, networks,
+# and volumes.
+#
+# When deploying a different set of containers, modify the docker-compose.yml.j2
+# to include only the required containers, and update this set of variables.
+#
+# Since this is a dict, you can add your own keys. So if, for example, you
+# prefer to provide your own SSL certs instead of using Letsencrypt, it's
+# possible to add a key like `omgwtfssl` (using the  paulczar/omgwtfssl
+# container), and add volumes and environment variabless here.
+#
+# Then, modify the docker-compose.yml.j2 template to include the omgwtfssl
+# container, using the existing containers as models for how to correctly
+# output the variables as correct yaml.
 nd_docker_compose:
   app:
     environment:
