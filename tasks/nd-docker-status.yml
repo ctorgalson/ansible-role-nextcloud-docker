@@ -1,0 +1,21 @@
+---
+# tasks related to checking status of newly-created containers.
+
+- name: Find out the name for the current container.
+  set_fact:
+    nd_docker_container_name: "nextcloud_{{ container.key }}_1"
+
+- name: Retrieve info about the current container.
+  docker_container_info:
+    name: "{{ nd_docker_container_name }}"
+  register: current_container_info
+
+- name: Check status of '{{ nd_docker_container_name }}' container.
+  assert:
+    that:
+      - "current_container_info.container.State.Running is sameas true"
+    success_msg: "{{ nd_docker_container_name }} is up and running."
+    fail_msg: >
+      {{ nd_docker_container_name }} status was
+      '{{ nd_docker_container_name }}.state.status'
+      (should have been 'running').

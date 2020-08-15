@@ -12,10 +12,13 @@ nd_docker_compose_remove_project: true
 #
 # Role configuration options.
 #
+# Set `no_log` property on tasks that may expose sensitive variables. Should
+# always be true, but may be useful for debugging.
+nd_secure_no_log: true
+# Permit default passwords. Should always be false, but can be disabled for
+# testing.
 nd_allow_insecure_defaults: false
-nd_use_letsencrypt: true
-nd_use_redis: true
-nd_use_cron: true
+
 nd_domain_name: "example.local"
 nd_nextcloud_install_tasks_file: "nd-nextcloud-install.yml"
 nd_nextcloud_post_install_tasks_file: "nd-nextcloud-post-install.yml"
@@ -28,86 +31,17 @@ nd_redis_host_password: "insecure"
 nd_nextcloud_admin_password: "insecure"
 
 #
-# Service environment vars and volumes.
-#
-
-#
-# Letsencrypt
-#
-# Env vars.
-nd_letsencrypt_env_vars:
-  - name: "LETSENCRYPT_HOST"
-    value: "{{ nd_domain_name }}"
-  - name: "LETSENCRYPT_EMAIL"
-    value: "admin@example.local"
-nd_nextcloud_required_apps: []
-
-# Volumes.
-nd_letsencrypt_required_volumes:
-  - "certs:/etc/nginx/certs"
-  - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
-#
 # PostgreSQL
 #
 nd_postgres_database: "nextcloud"
 nd_postgres_host: "db"
 nd_postgres_user: "nextcloud"
 
-# Env vars.
-nd_postgres_env_vars:
-  - name: "POSTGRES_DB"
-    value: "{{ nd_postgres_database }}"
-  - name: "POSTGRES_HOST"
-    value: "{{ nd_postgres_host }}"
-  - name: "POSTGRES_PASSWORD"
-    value: "{{ nd_postgres_password }}"
-  - name: "POSTGRES_USER"
-    value: "{{ nd_postgres_user }}"
-
-# Volumes.
-nd_postgres_required_volumes:
-  - "db:/var/lib/postgresql/data"
-
-#
-# Nextcloud
-#
-# Env vars.
-nd_nextcloud_env_vars:
-  - name: "VIRTUAL_HOST"
-    value: "{{ nd_domain_name }}"
-  - name: "POSTGRES_HOST"
-    value: "db"
-
-# Volumes.
-nd_nextcloud_required_volumes:
-  - "nextcloud:/var/www/html"
-  # - "/var/nextcloud/config:/var/www/html/config"
-  # - "/var/nextcloud/custom_apps:/var/www/html/custom_apps"
-  # - "/var/nextcloud/data:/var/www/html/data"
-  # - "/var/nextcloud/themes:/var/www/html/themes"
-
-#
-# Nginx Proxy
-#
-# Volumes.
-nd_nginx_proxy_required_volumes:
-  - "vhost.d:/etc/nginx/vhost.d"
-  - "html:/usr/share/nginx/html"
-  - "/var/run/docker.sock:/tmp/docker.sock:ro"
-  # - "/var/nextcloud/proxy/conf.d:/etc/nginx/conf.d"
-
 #
 # Redis
 #
-# Env vars.
-nd_redis_env_vars:
-  - name: "REDIS_HOST"
-    value: "redis"
-  - name: "REDIS_HOST_PORT"
-    value: "6379"
-  - name: "REDIS_HOST_PASSWORD"
-    value: "{{ nd_redis_host_password }}"
+nd_redis_host: "redis"
+nd_redis_port: "6379"
 
 #
 # Nextcloud install, setup related vars.
@@ -134,3 +68,73 @@ nd_nextcloud_occ_commands:
   - command: "config:system:set trusted_domains 1 --value={{ nd_domain_name }}"
   - command: "encryption:enable"
   - command: "app:enable {{ nd_nextcloud_encryption_module }}"
+
+
+nd_docker_network: "proxy-tier"
+
+# These are all the volumes used in the `volumes` section of docker-compose.yml.
+nd_docker_volumes:
+  db: "db"
+  app: "nextcloud"
+  letsencrypt-companion: "certs"
+  proxy:
+    conf: "vhost.d"
+    docroot: "html"
+
+# These variables used to populate values in docker-compose.yml. To keep things
+# simple and flexible, we're only populating environment variables, networks,
+# and volumes.
+#
+# When deploying a different set of containers, modify the docker-compose.yml.j2
+# to include only the required containers, and update this set of variables.
+#
+# Since this is a dict, you can add your own keys. So if, for example, you
+# prefer to provide your own SSL certs instead of using Letsencrypt, it's
+# possible to add a key like `omgwtfssl` (using the  paulczar/omgwtfssl
+# container), and add volumes and environment variabless here.
+#
+# Then, modify the docker-compose.yml.j2 template to include the omgwtfssl
+# container, using the existing containers as models for how to correctly
+# output the variables as correct yaml.
+nd_docker_compose:
+  app:
+    environment:
+      - "VIRTUAL_HOST={{ nd_domain_name }}"
+      - "LETSENCRYPT_HOST={{ nd_domain_name }}"
+      - "LETSENCRYPT_EMAIL=admin@example.local"
+      - "POSTGRES_HOST={{ nd_postgres_host }}"
+      - "REDIS_HOST={{ nd_redis_host }}"
+    networks:
+      - "default"
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes.app }}:/var/www/html"
+  db:
+    environment:
+      - "POSTGRES_DB={{ nd_postgres_database }}"
+      - "POSTGRES_HOST={{ nd_postgres_host }}"
+      - "POSTGRES_PASSWORD={{ nd_postgres_password }}"
+      - "POSTGRES_USER={{ nd_postgres_user }}"
+    volumes:
+      - "{{ nd_docker_volumes.db }}:/var/lib/postgresql/data"
+  proxy:
+    networks:
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes['letsencrypt-companion'] }}:/etc/nginx/certs:ro"
+      - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
+      - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+  letsencrypt-companion:
+    networks:
+      - "{{ nd_docker_network }}"
+    volumes:
+      - "{{ nd_docker_volumes['letsencrypt-companion'] }}:/etc/nginx/certs"
+      - "{{ nd_docker_volumes.proxy.conf }}:/etc/nginx/vhost.d"
+      - "{{ nd_docker_volumes.proxy.docroot }}:/usr/share/nginx/html"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  redis:
+    environment:
+      - "REDIS_HOST={{ nd_redis_host }}"
+      - "REDIS_HOST_PORT={{ nd_redis_port }}"
+      - "REDIS_HOST_PASSWORD={{ nd_redis_host_password }}"

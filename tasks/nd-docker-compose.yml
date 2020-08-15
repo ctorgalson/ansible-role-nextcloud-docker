@@ -1,34 +1,6 @@
 ---
 # tasks related to docker-compose for ansible-role-nextcloud-docker.
 
-- name: Work out lists of volumes for various containers.
-  block:
-    - name: Set Nextcloud volumes.
-      set_fact:
-        nd_nextcloud_volumes: "{{ nd_nextcloud_required_volumes }}"
-
-    - name: Set PostgreSQL volumes.
-      set_fact:
-        nd_postgres_volumes: "{{ nd_postgres_required_volumes }}"
-
-    - name: Set Nginx Proxy volumes.
-      set_fact:
-        nd_nginx_proxy_volumes: "{{ (nd_nginx_proxy_required_volumes + nd_use_letsencrypt|ternary(nd_letsencrypt_required_volumes, []))|unique }}"
-
-    - name: Set Letsencrypt helper volumes.
-      set_fact:
-        nd_letsencrypt_volumes: "{{ (nd_letsencrypt_required_volumes + nd_nginx_proxy_required_volumes)|unique }}"
-
-- name: Create a list of env variables for Nextcloud.
-  set_fact:
-    nd_nextcloud_env_vars: >
-      {{ nd_nextcloud_env_vars
-      + (nd_use_redis is sameas true)|ternary(nd_redis_env_vars, [])
-      + (nd_use_letsencrypt is sameas true)|ternary(nd_letsencrypt_env_vars, []) }}
-  changed_when: false
-  # The list contains the redis password.
-  no_log: true
-
 - name: Create directory for docker-compose files on remote.
   file:
     path: "{{ nd_docker_compose_project_dir }}"
@@ -40,16 +12,16 @@
     src: "{{ nd_docker_compose_project_src }}/db.env.j2"
     dest: "{{ nd_docker_compose_project_dir }}/db.env"
   changed_when: false
-  # The env contains the postgres password.
-  no_log: true
+  # The env file may contain one or more passwords.
+  no_log: "{{ nd_secure_no_log }}"
 
 - name: Transfer dockerfile to remote.
   template:
     src: "{{ nd_docker_compose_project_src }}/docker-compose.yml.j2"
     dest: "{{ nd_docker_compose_project_dir }}/docker-compose.yml"
   changed_when: false
-  # The dockerfile contains the Redis host password.
-  no_log: true
+  # The dockerfile may contain one or more passwords.
+  no_log: "{{ nd_secure_no_log }}"
 
 - name: Copy Nextcloud dockerfile dependencies to remote.
   copy:
@@ -73,66 +45,8 @@
   when: "nd_docker_compose_remove_project"
 
 - name: Test status of containers.
-  block:
-    - name: Assert Nextcloud app container is up and running.
-      assert:
-        that:
-          - "app.nextcloud_app_1.state.status == 'running'"
-        success_msg: "Nextcloud app container running."
-        fail_msg: >
-          Nextcloud app container status was
-          '{{ app.nextcloud_app_1.state.status }}'
-          (should have been 'running').
-
-    - name: Assert Nextcloud cron container is up and running.
-      assert:
-        that:
-          - "cron.nextcloud_cron_1.state.status == 'running'"
-        success_msg: "Nextcloud cron container running."
-        fail_msg: >
-          Nextcloud cron container status was
-          '{{ cron.nextcloud_cron_1.state.status }}'
-          (should have been 'running').
-      when: "nd_use_cron"
-
-    - name: Assert Nextcloud Nginx proxy container is up and running.
-      assert:
-        that:
-          - "proxy.nextcloud_proxy_1.state.status == 'running'"
-        success_msg: "Nextcloud Nginx proxy container running."
-        fail_msg: >
-          Nextcloud Nginx proxy container status was
-          '{{ proxy.nextcloud_proxy_1.state.status }}'
-          (should have been 'running').
-
-    - name: Assert Nextcloud Postgres container is up and running.
-      assert:
-        that:
-          - "db.nextcloud_db_1.state.status == 'running'"
-        success_msg: "Nextcloud db container running."
-        fail_msg: >
-          Nextcloud db container status was
-          '{{ db.nextcloud_db_1.state.status }}'
-          (should have been 'running').
-
-    - name: Assert Nextcloud Redis container is up and running.
-      assert:
-        that:
-          - "redis.nextcloud_redis_1.state.status == 'running'"
-        success_msg: "Nextcloud Redis container running."
-        fail_msg: >
-          Nextcloud redis container status was
-          '{{ redis.nextcloud_redis_1.state.status }}'
-          (should have been 'running').
-      when: "nd_use_redis"
-
-    - name: Assert Nextcloud Letsencrypt container is up and running.
-      assert:
-        that:
-          - "letsencrypt.nextcloud_letsencrypt_1.state.status == 'running'"
-        success_msg: "Nextcloud Letsencrypt container running."
-        fail_msg: >
-          Nextcloud Letsencrypt container status was
-          '{{ letsencrypt.nextcloud_letsencrypt_1.state.status }}'
-          (should have been 'running').
-      when: "nd_use_letsencrypt"
+  include_tasks:
+    file: "tasks/nd-docker-status.yml"
+  loop: "{{ nd_docker_compose | dict2items }}"
+  loop_control:
+    loop_var: container

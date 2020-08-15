@@ -1,4 +1,7 @@
 ---
+# Used in molecule testing, so does not include any lets encrypt container
+# vars or settings.
+
 version: '3'
 
 services:
@@ -8,7 +11,7 @@ services:
     volumes:
       {{ nd_docker_compose.db.volumes | to_nice_yaml | indent(width=6) }}
     env_file:
-      - db.en
+      - db.env
 
   redis:
     image: redis:alpine
@@ -46,28 +49,14 @@ services:
     restart: always
     ports:
       - 80:80
-      - 443:443
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
     volumes:
       {{ nd_docker_compose.proxy.volumes | to_nice_yaml | indent(width=6) }}
     networks:
       {{ nd_docker_compose.proxy.networks | to_nice_yaml | indent(width=6) }}
 
-  letsencrypt-companion:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    restart: always
-    volumes:
-      {{ nd_docker_compose['letsencrypt-companion'].volumes | to_nice_yaml | indent(width=6) }}
-    networks:
-      {{ nd_docker_compose['letsencrypt-companion'].networks | to_nice_yaml | indent(width=6) }}
-    depends_on:
-      - proxy
-
 volumes:
   {{ nd_docker_volumes.db }}:
   {{ nd_docker_volumes.app}}:
-  {{ nd_docker_volumes['letsencrypt-companion']}}:
   {{ nd_docker_volumes.proxy.conf }}:
   {{ nd_docker_volumes.proxy.docroot }}:
 
