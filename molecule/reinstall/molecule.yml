@@ -1,13 +1,22 @@
 ---
+# Molecule config for reinstall scenario.
 dependency:
   name: galaxy
+lint: |
+  yamllint -d "{ignore: .venv}" .
+  ansible-lint defaults files meta molecule tasks
+  flake8 molecule
 driver:
   name: docker
 platforms:
   - name: instance
-    image: docker.io/pycontribs/centos:8
+    image: geerlingguy/docker-ubuntu1804-ansible
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
     pre_build_image: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
 provisioner:
   name: ansible
 verifier:
-  name: ansible
+  name: testinfra

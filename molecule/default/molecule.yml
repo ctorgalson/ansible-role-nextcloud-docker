@@ -1,4 +1,5 @@
 ---
+# Molecule config for default scenario.
 dependency:
   name: galaxy
 lint: |
@@ -11,6 +12,7 @@ platforms:
   - name: instance
     image: geerlingguy/docker-ubuntu1804-ansible
     command: ${MOLECULE_DOCKER_COMMAND:-""}
+    pre_build_image: true
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     privileged: true
