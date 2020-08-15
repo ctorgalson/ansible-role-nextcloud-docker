@@ -1,0 +1,259 @@
+{
+    "system": {
+        "htaccess.RewriteBase": "\/",
+        "memcache.local": "\\OC\\Memcache\\APCu",
+        "apps_paths": [
+            {
+                "path": "\/var\/www\/html\/apps",
+                "url": "\/apps",
+                "writable": false
+            },
+            {
+                "path": "\/var\/www\/html\/custom_apps",
+                "url": "\/custom_apps",
+                "writable": true
+            }
+        ],
+        "memcache.distributed": "\\OC\\Memcache\\Redis",
+        "memcache.locking": "\\OC\\Memcache\\Redis",
+        "redis": {
+            "host": "redis",
+            "password": false,
+            "port": 6379
+        },
+        "passwordsalt": "nvcuoqF5sPa3zG1kAhpjDNwOZIPryO",
+        "secret": "PUaaL8D89+LnWZk2AxJ6rGfjBsdjcAfq8lnvx63W0pAntcek",
+        "trusted_domains": [
+            "localhost",
+            "instance"
+        ],
+        "datadirectory": "\/var\/www\/html\/data",
+        "dbtype": "pgsql",
+        "version": "19.0.1.1",
+        "overwrite.cli.url": "http:\/\/localhost",
+        "dbname": "nextcloud",
+        "dbhost": "db",
+        "dbport": "",
+        "dbtableprefix": "oc_",
+        "dbuser": "oc_admin",
+        "dbpassword": "ktc5m1jcgtbica3fuppmmsxtgk03b3",
+        "installed": true,
+        "instanceid": "ocbx09mx8t2n"
+    },
+    "apps": {
+        "accessibility": {
+            "installed_version": "1.5.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "activity": {
+            "installed_version": "2.12.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        },
+        "backgroundjob": {
+            "lastjob": "7"
+        },
+        "cloud_federation_api": {
+            "installed_version": "1.2.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        },
+        "comments": {
+            "installed_version": "1.9.0",
+            "types": "logging",
+            "enabled": "yes"
+        },
+        "contactsinteraction": {
+            "installed_version": "1.0.0",
+            "types": "dav",
+            "enabled": "yes"
+        },
+        "core": {
+            "installedat": "1597485095.8789",
+            "lastupdatedat": "1597485095.8815",
+            "vendor": "nextcloud",
+            "public_webdav": "dav\/appinfo\/v1\/publicwebdav.php",
+            "public_files": "files_sharing\/public.php",
+            "encryption_enabled": "yes",
+            "default_encryption_module": "OC_DEFAULT_MODULE",
+            "backgroundjobs_mode": "cron",
+            "lastcron": "1597486201"
+        },
+				"dav": {
+            "installed_version": "1.15.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        },
+        "encryption": {
+            "installed_version": "2.7.0",
+            "types": "filesystem",
+            "enabled": "yes",
+            "recoveryKeyId": "recoveryKey_6f29a492",
+            "publicShareKeyId": "pubShare_6f29a492",
+            "masterKeyId": "master_6f29a492"
+        },
+        "federatedfilesharing": {
+            "installed_version": "1.9.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "federation": {
+            "installed_version": "1.9.0",
+            "types": "authentication",
+            "enabled": "yes"
+        },
+        "files": {
+            "installed_version": "1.14.0",
+            "types": "filesystem",
+            "enabled": "yes",
+            "cronjob_scan_files": "500"
+        },
+        "files_pdfviewer": {
+            "installed_version": "1.8.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "files_rightclick": {
+            "installed_version": "0.16.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "files_sharing": {
+            "installed_version": "1.11.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        },
+        "files_trashbin": {
+            "installed_version": "1.9.0",
+            "types": "filesystem,dav",
+            "enabled": "yes"
+        },
+        "files_versions": {
+            "installed_version": "1.12.0",
+            "types": "filesystem,dav",
+            "enabled": "yes"
+        },
+        "files_videoplayer": {
+            "installed_version": "1.8.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "firstrunwizard": {
+            "installed_version": "2.8.0",
+            "types": "logging",
+            "enabled": "yes"
+        },
+        "logreader": {
+            "installed_version": "2.4.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "lookup_server_connector": {
+            "installed_version": "1.7.0",
+            "types": "authentication",
+            "enabled": "yes"
+        },
+        "nextcloud_announcements": {
+            "installed_version": "1.8.0",
+            "types": "logging",
+            "enabled": "yes",
+            "pub_date": "Thu, 24 Oct 2019 00:00:00 +0200"
+        },
+        "notifications": {
+            "installed_version": "2.7.0",
+            "types": "logging",
+            "enabled": "yes"
+        },
+        "oauth2": {
+            "installed_version": "1.7.0",
+            "types": "authentication",
+            "enabled": "yes"
+        },
+        "password_policy": {
+            "installed_version": "1.9.1",
+            "types": "authentication",
+            "enabled": "yes"
+        },
+        "photos": {
+            "installed_version": "1.1.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "privacy": {
+            "installed_version": "1.3.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "provisioning_api": {
+            "installed_version": "1.9.0",
+            "types": "prevent_group_restriction",
+            "enabled": "yes"
+        },
+        "recommendations": {
+            "installed_version": "0.7.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "serverinfo": {
+            "installed_version": "1.9.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "settings": {
+            "installed_version": "1.1.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "sharebymail": {
+            "installed_version": "1.9.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        },
+        "support": {
+            "installed_version": "1.2.1",
+            "types": "session",
+            "enabled": "yes"
+        },
+        "survey_client": {
+            "installed_version": "1.7.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "systemtags": {
+            "installed_version": "1.9.0",
+            "types": "logging",
+            "enabled": "yes"
+        },
+        "text": {
+            "installed_version": "3.0.1",
+            "types": "dav",
+            "enabled": "yes"
+        },
+        "theming": {
+            "installed_version": "1.10.0",
+            "types": "logging",
+            "enabled": "yes"
+        },
+        "twofactor_backupcodes": {
+            "installed_version": "1.8.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "updatenotification": {
+            "installed_version": "1.9.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "viewer": {
+            "installed_version": "1.3.0",
+            "types": "",
+            "enabled": "yes"
+        },
+        "workflowengine": {
+            "installed_version": "2.1.0",
+            "types": "filesystem",
+            "enabled": "yes"
+        }
+    }
+}
